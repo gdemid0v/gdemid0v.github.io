@@ -1,0 +1,8 @@
+The uploaded SE98 folder does not include a standalone LICENSE file in this
+workspace copy.
+
+The upstream SE98 / Win98SE icon theme repository declares GPL-2.0 licensing.
+
+Author: nestoris
+Source: https://github.com/nestoris/Win98SE
+License: GNU General Public License v2.0

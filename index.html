@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Портфолио Георгия Демидова в виде Windows 98-style рабочего стола."
+    />
+    <title>George Demidov - Windows 98 Portfolio</title>
+    <link rel="stylesheet" href="./98.css-main/style.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="desktop" class="desktop" aria-label="Windows 98-style portfolio desktop">
+      <div id="desktop-icons" class="desktop-icons" aria-label="Desktop shortcuts"></div>
+
+      <div id="window-layer" class="window-layer" aria-live="polite"></div>
+
+      <nav id="start-menu" class="start-menu" aria-label="Start menu" hidden>
+        <div class="start-menu__sidebar">
+          <span>George 98</span>
+        </div>
+        <div id="start-menu-items" class="start-menu__items"></div>
+      </nav>
+
+      <footer class="taskbar" aria-label="Taskbar">
+        <button id="start-button" class="start-button" type="button" aria-expanded="false">
+          <span class="start-button__mark" aria-hidden="true"></span>
+          <span id="start-button-label">Пуск</span>
+        </button>
+
+        <div id="taskbar-items" class="taskbar-items" aria-label="Open windows"></div>
+
+        <div class="taskbar-tray" aria-label="System tray">
+          <button id="language-button" class="language-button" type="button">
+            RU
+          </button>
+          <div class="taskbar-clock" aria-label="System clock">
+            <span id="clock-icon" class="taskbar-clock__icon" aria-hidden="true"></span>
+            <span id="clock">--:--</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
