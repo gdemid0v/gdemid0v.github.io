@@ -19,6 +19,13 @@ body {
   background: var(--desktop);
 }
 
+@supports (height: 100dvh) {
+  html,
+  body {
+    height: 100dvh;
+  }
+}
+
 body {
   font-family: "Pixelated MS Sans Serif", "MS Sans Serif", Tahoma, Arial, sans-serif;
   font-size: 11px;
@@ -35,6 +42,7 @@ textarea {
   position: relative;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   min-height: 360px;
   overflow: hidden;
   background-color: var(--desktop);
@@ -47,15 +55,9 @@ textarea {
 
 .desktop-icons {
   position: absolute;
-  top: 10px;
-  left: 8px;
+  inset: 0 0 var(--taskbar-height) 0;
   z-index: 2;
-  display: grid;
-  grid-template-columns: 98px;
-  grid-auto-rows: 72px;
-  gap: 6px;
-  align-content: start;
-  max-height: calc(100vh - var(--taskbar-height) - 14px);
+  pointer-events: none;
 }
 
 .desktop-icon,
@@ -69,6 +71,7 @@ textarea {
 }
 
 .desktop-icon {
+  position: absolute;
   display: flex;
   width: 96px;
   min-width: 0;
@@ -82,6 +85,8 @@ textarea {
   color: var(--desktop-text);
   text-align: center;
   text-shadow: 1px 1px #000;
+  pointer-events: auto;
+  touch-action: none;
 }
 
 .desktop-icon:focus {
@@ -89,10 +94,15 @@ textarea {
 }
 
 .desktop-icon:hover .desktop-icon__label,
-.desktop-icon:focus .desktop-icon__label {
+.desktop-icon:focus .desktop-icon__label,
+.desktop-icon.is-selected .desktop-icon__label {
   color: #fff;
   background: var(--selection-blue);
   outline: 1px dotted #fff;
+}
+
+.desktop-icon.is-selected img {
+  filter: drop-shadow(1px 1px 0 #000);
 }
 
 .desktop-icon__label {
@@ -139,13 +149,23 @@ textarea {
   pointer-events: none;
 }
 
+.selection-rectangle {
+  position: absolute;
+  z-index: 4;
+  border: 1px dotted #fff;
+  background: rgb(0 0 128 / 14%);
+  pointer-events: none;
+}
+
 .window {
   position: absolute;
   display: flex;
   min-width: 250px;
   min-height: 150px;
   flex-direction: column;
+  overflow: hidden;
   pointer-events: auto;
+  resize: both;
 }
 
 .window.is-minimized {
@@ -157,10 +177,12 @@ textarea {
   top: 0 !important;
   width: 100% !important;
   height: 100% !important;
+  resize: none;
 }
 
 .title-bar {
   cursor: move;
+  touch-action: none;
 }
 
 .title-bar-text {
@@ -263,6 +285,43 @@ textarea {
   flex-direction: column;
 }
 
+.window-resize-handle {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  z-index: 3;
+  width: 15px;
+  height: 15px;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.window-resize-handle::before,
+.window-resize-handle::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  border-right: 1px solid var(--button-shadow);
+  border-bottom: 1px solid var(--button-shadow);
+  pointer-events: none;
+}
+
+.window-resize-handle::before {
+  width: 11px;
+  height: 11px;
+}
+
+.window-resize-handle::after {
+  width: 6px;
+  height: 6px;
+  box-shadow: -5px -5px 0 -4px var(--button-shadow);
+}
+
+.window.is-maximized .window-resize-handle {
+  display: none;
+}
+
 .portfolio-menu-bar {
   display: flex;
   align-items: center;
@@ -274,20 +333,83 @@ textarea {
   background: var(--surface);
 }
 
-.portfolio-menu-bar span {
+.menu-bar-button {
   display: inline-flex;
   height: 17px;
   padding: 2px 7px 1px;
   align-items: center;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #000;
 }
 
-.portfolio-menu-bar span::first-letter {
+.menu-bar-button::first-letter {
   text-decoration: underline;
 }
 
-.portfolio-menu-bar span:hover {
+.menu-bar-button:hover,
+.menu-bar-button:focus {
   color: #fff;
   background: var(--selection-blue);
+  outline: none;
+}
+
+.context-menu,
+.window-menu-dropdown {
+  position: absolute;
+  z-index: 200;
+  min-width: 152px;
+  padding: 2px;
+  background: var(--surface);
+  box-shadow: var(--border-window-outer), var(--border-window-inner);
+}
+
+.window-menu-dropdown {
+  z-index: 40;
+}
+
+.menu-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-item {
+  display: flex;
+  width: 100%;
+  min-height: 19px;
+  padding: 2px 18px 2px 18px;
+  align-items: center;
+  justify-content: flex-start;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #000;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.menu-item:hover,
+.menu-item:focus {
+  color: #fff;
+  background: var(--selection-blue);
+  outline: none;
+}
+
+.menu-item:disabled {
+  color: var(--button-shadow);
+  text-shadow: 1px 1px var(--button-highlight);
+}
+
+.menu-item:disabled:hover {
+  background: transparent;
+}
+
+.menu-separator {
+  height: 2px;
+  margin: 3px 2px;
+  border-top: 1px solid var(--button-shadow);
+  border-bottom: 1px solid var(--button-highlight);
 }
 
 .window-panel {
@@ -305,6 +427,11 @@ textarea {
   padding: 3px 2px;
   border-top: 1px solid var(--button-highlight);
   border-bottom: 1px solid var(--button-shadow);
+}
+
+.explorer-toolbar button:disabled {
+  color: var(--button-shadow);
+  text-shadow: 1px 1px var(--button-highlight);
 }
 
 .win-button {
@@ -339,10 +466,47 @@ textarea {
   box-shadow: var(--border-field);
 }
 
+.explorer-main {
+  display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-columns: 126px minmax(0, 1fr);
+  gap: 4px;
+  margin: 3px 0;
+}
+
+.explorer-tree {
+  padding: 4px 2px;
+  overflow: auto;
+  background: #fff;
+  box-shadow: var(--border-field);
+}
+
+.explorer-tree__item {
+  display: flex;
+  width: 100%;
+  min-height: 20px;
+  padding: 1px 3px;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #000;
+  text-align: left;
+}
+
+.explorer-tree__item:hover,
+.explorer-tree__item:focus,
+.explorer-tree__item.is-selected {
+  color: #fff;
+  background: var(--selection-blue);
+  outline: none;
+}
+
 .folder-view {
   flex: 1 1 auto;
   min-height: 0;
-  margin: 3px 0;
   padding: 7px;
   overflow: auto;
   background: #fff;
@@ -354,6 +518,20 @@ textarea {
   grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
   gap: 7px 6px;
   align-items: start;
+}
+
+.folder-files--small {
+  grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+}
+
+.folder-files--list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.folder-files--details {
+  display: block;
 }
 
 .file-icon {
@@ -369,8 +547,23 @@ textarea {
   text-align: center;
 }
 
+.file-icon--small {
+  min-height: 54px;
+  gap: 3px;
+}
+
+.file-icon--list {
+  min-height: 21px;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 5px;
+  text-align: left;
+}
+
 .file-icon:hover,
-.file-icon:focus {
+.file-icon:focus,
+.file-icon.is-selected,
+.certificate-card.is-selected {
   color: #fff;
   background: var(--selection-blue);
   outline: 1px dotted #fff;
@@ -381,6 +574,46 @@ textarea {
   width: 100%;
   line-height: 13px;
   overflow-wrap: anywhere;
+}
+
+.folder-empty-message {
+  padding: 8px;
+  color: #555;
+}
+
+.details-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #000;
+}
+
+.details-table th {
+  height: 19px;
+  padding: 2px 5px;
+  border-right: 1px solid var(--button-shadow);
+  border-bottom: 1px solid var(--button-shadow);
+  background: var(--surface);
+  box-shadow: inset 1px 1px var(--button-highlight);
+  font-weight: normal;
+  text-align: left;
+}
+
+.details-table td {
+  height: 20px;
+  padding: 2px 5px;
+  white-space: nowrap;
+}
+
+.details-table td:first-child {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.details-table tr.is-selected td,
+.details-table tr:hover td {
+  color: #fff;
+  background: var(--selection-blue);
 }
 
 .status-bar {
@@ -417,6 +650,39 @@ textarea {
 .notepad-editor:focus {
   outline: 1px dotted #000;
   outline-offset: -4px;
+}
+
+.image-viewer-panel {
+  gap: 3px;
+}
+
+.image-viewer-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 29px;
+  padding: 3px 2px;
+  border-top: 1px solid var(--button-highlight);
+  border-bottom: 1px solid var(--button-shadow);
+}
+
+.image-viewer-frame {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 6px;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: #fff;
+  box-shadow: var(--border-field);
+}
+
+.portrait-image {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .taskbar {
@@ -496,6 +762,7 @@ textarea {
   box-shadow: var(--border-status-field);
 }
 
+.sound-button,
 .language-button {
   display: inline-flex;
   align-items: center;
@@ -505,6 +772,10 @@ textarea {
   min-height: 22px;
   padding: 0 5px;
   font-weight: bold;
+}
+
+.sound-button.is-muted {
+  font-weight: normal;
 }
 
 .taskbar-clock {
@@ -784,7 +1055,50 @@ textarea {
 
 .dialog-actions {
   display: flex;
+  gap: 7px;
   justify-content: center;
+}
+
+.properties-summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.properties-list {
+  margin: 0;
+  line-height: 15px;
+}
+
+.properties-list div {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.properties-list dt {
+  font-weight: bold;
+}
+
+.properties-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.rename-field {
+  display: grid;
+  gap: 5px;
+}
+
+.rename-input {
+  width: 100%;
+  height: 22px;
+  padding: 2px 4px;
+  font-family: inherit;
+  background: #fff;
+  border: 0;
+  box-shadow: var(--border-field);
 }
 
 @media (max-width: 720px) {
@@ -792,10 +1106,12 @@ textarea {
     --taskbar-height: 38px;
   }
 
+  .desktop {
+    min-height: 320px;
+  }
+
   .desktop-icons {
-    grid-template-columns: repeat(2, 92px);
-    grid-auto-rows: 72px;
-    max-height: calc(100vh - var(--taskbar-height) - 12px);
+    inset: 0 0 var(--taskbar-height) 0;
   }
 
   .desktop-icon {
@@ -804,10 +1120,27 @@ textarea {
 
   .window {
     min-width: 230px;
+    max-width: calc(100vw - 8px);
+    max-height: calc(100vh - var(--taskbar-height) - 8px);
+    max-height: calc(100dvh - var(--taskbar-height) - 8px);
+  }
+
+  .title-bar-controls button {
+    min-width: 20px;
+    min-height: 18px;
+  }
+
+  .window-resize-handle {
+    width: 20px;
+    height: 20px;
   }
 
   .folder-files {
     grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+  }
+
+  .explorer-main {
+    grid-template-columns: 98px minmax(0, 1fr);
   }
 
   .certificate-preview {
@@ -835,21 +1168,25 @@ textarea {
   }
 
   .desktop-icons {
-    left: 6px;
-    top: 7px;
-    grid-template-columns: 78px;
-    grid-auto-rows: 68px;
-    gap: 4px;
+    inset: 0 0 var(--taskbar-height) 0;
   }
 
   .desktop-icon {
-    width: 76px;
+    width: 86px;
     height: 66px;
   }
 
   .desktop-icon__label {
-    max-width: 74px;
+    max-width: 84px;
     line-height: 12px;
+  }
+
+  .explorer-main {
+    grid-template-columns: 1fr;
+  }
+
+  .explorer-tree {
+    display: none;
   }
 
   .icon-image--large {
@@ -860,6 +1197,12 @@ textarea {
   .window {
     min-width: 220px;
     max-width: calc(100vw - 8px);
+    max-height: calc(100vh - var(--taskbar-height) - 8px);
+    max-height: calc(100dvh - var(--taskbar-height) - 8px);
+  }
+
+  .window-body-slot {
+    margin: 1px;
   }
 
   .portfolio-menu-bar span {
@@ -889,6 +1232,19 @@ textarea {
   .language-button {
     min-width: 30px;
     padding-inline: 3px;
+  }
+
+  .sound-button {
+    min-width: 31px;
+    padding-inline: 3px;
+  }
+
+  .taskbar-clock__icon {
+    display: none;
+  }
+
+  .image-viewer-frame {
+    padding: 3px;
   }
 
   .certificate-card {
