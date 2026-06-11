@@ -1101,6 +1101,241 @@ textarea {
   box-shadow: var(--border-field);
 }
 
+.game-panel {
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.game-toolbar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  box-shadow: var(--border-sunken-outer), var(--border-sunken-inner);
+}
+
+.game-stat {
+  display: grid;
+  min-width: 54px;
+  gap: 1px;
+  line-height: 12px;
+}
+
+.game-stat span {
+  color: #000;
+}
+
+.game-stat strong {
+  display: block;
+  min-width: 42px;
+  height: 18px;
+  padding: 2px 4px;
+  color: #00ff00;
+  background: #000;
+  box-shadow: var(--border-field);
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  line-height: 14px;
+  text-align: right;
+}
+
+.snake-panel {
+  align-items: stretch;
+}
+
+.snake-stage {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 8px;
+  align-items: center;
+  justify-content: center;
+  background: #808080;
+  box-shadow: var(--border-field);
+}
+
+.snake-canvas {
+  display: block;
+  width: min(280px, 100%);
+  height: auto;
+  max-height: 100%;
+  background: #001c10;
+  box-shadow: var(--border-sunken-outer), var(--border-sunken-inner);
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.snake-message {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  max-width: 84%;
+  padding: 4px 7px;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  background: #000080;
+  box-shadow: var(--border-raised-outer), var(--border-raised-inner);
+  text-align: center;
+  line-height: 14px;
+  pointer-events: none;
+}
+
+.snake-controls {
+  display: grid;
+  width: 112px;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(3, 34px);
+  gap: 3px;
+  justify-content: center;
+  align-self: center;
+}
+
+.snake-control-button {
+  width: 34px;
+  min-width: 34px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.minesweeper-panel {
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.minesweeper-header {
+  display: grid;
+  width: 226px;
+  grid-template-columns: 74px 1fr 74px;
+  gap: 5px;
+  align-items: center;
+  padding: 5px;
+  box-shadow: var(--border-sunken-outer), var(--border-sunken-inner);
+}
+
+.minesweeper-counter {
+  display: grid;
+  gap: 2px;
+  text-align: center;
+  line-height: 11px;
+}
+
+.minesweeper-counter strong {
+  display: block;
+  height: 22px;
+  padding: 2px 5px;
+  color: #ff3030;
+  background: #000;
+  box-shadow: var(--border-field);
+  font-family: "Courier New", monospace;
+  font-size: 16px;
+  line-height: 18px;
+  text-align: right;
+}
+
+.minesweeper-face {
+  width: 32px;
+  min-width: 32px;
+  height: 30px;
+  min-height: 30px;
+  justify-self: center;
+  padding: 0;
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.minesweeper-message {
+  width: 226px;
+  min-height: 17px;
+  padding: 2px 4px;
+  color: #000;
+  background: var(--surface);
+  box-shadow: var(--border-status-field);
+  line-height: 13px;
+  text-align: center;
+}
+
+.minesweeper-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 24px);
+  gap: 0;
+  padding: 3px;
+  background: var(--surface);
+  box-shadow: var(--border-sunken-outer), var(--border-sunken-inner);
+  touch-action: manipulation;
+}
+
+.minesweeper-cell {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0;
+  color: #000;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  font-weight: bold;
+  line-height: 20px;
+  text-align: center;
+  background: var(--surface);
+  box-shadow: var(--border-raised-outer), var(--border-raised-inner);
+}
+
+.minesweeper-cell.is-open {
+  background: #c0c0c0;
+  box-shadow:
+    inset 1px 1px #808080,
+    inset -1px -1px #dfdfdf;
+}
+
+.minesweeper-cell.is-flagged {
+  color: #c00000;
+}
+
+.minesweeper-cell.is-mine {
+  color: #000;
+  background: #ff8080;
+}
+
+.minesweeper-cell.value-1 {
+  color: #0000ff;
+}
+
+.minesweeper-cell.value-2 {
+  color: #008000;
+}
+
+.minesweeper-cell.value-3 {
+  color: #ff0000;
+}
+
+.minesweeper-cell.value-4 {
+  color: #000080;
+}
+
+.minesweeper-cell.value-5 {
+  color: #800000;
+}
+
+.minesweeper-cell.value-6 {
+  color: #008080;
+}
+
+.minesweeper-cell.value-7 {
+  color: #000;
+}
+
+.minesweeper-cell.value-8 {
+  color: #808080;
+}
+
 @media (max-width: 720px) {
   :root {
     --taskbar-height: 38px;
@@ -1159,6 +1394,14 @@ textarea {
   .taskbar-clock {
     min-width: 48px;
     padding-inline: 4px;
+  }
+
+  .game-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .snake-controls {
+    display: grid;
   }
 }
 
@@ -1245,6 +1488,48 @@ textarea {
 
   .image-viewer-frame {
     padding: 3px;
+  }
+
+  .game-panel {
+    padding: 3px;
+  }
+
+  .game-toolbar {
+    gap: 3px;
+  }
+
+  .game-stat {
+    min-width: 49px;
+  }
+
+  .game-stat strong {
+    min-width: 38px;
+  }
+
+  .snake-stage {
+    padding: 4px;
+  }
+
+  .minesweeper-header,
+  .minesweeper-message {
+    width: 208px;
+  }
+
+  .minesweeper-header {
+    grid-template-columns: 66px 1fr 66px;
+  }
+
+  .minesweeper-grid {
+    grid-template-columns: repeat(var(--cols), 22px);
+  }
+
+  .minesweeper-cell {
+    width: 22px;
+    min-width: 22px;
+    height: 22px;
+    min-height: 22px;
+    font-size: 14px;
+    line-height: 18px;
   }
 
   .certificate-card {

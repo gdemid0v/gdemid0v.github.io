@@ -15,6 +15,13 @@ const PORTRAIT_IMAGE = {
   src: "assets/Portret.png",
   filename: "Portret.png",
 };
+const SNAKE_BEST_STORAGE_KEY = "portfolioSnakeBestScore";
+const SNAKE_GRID_SIZE = 20;
+const SNAKE_CELL_SIZE = 14;
+const SNAKE_TICK_MS = 140;
+const MINESWEEPER_ROWS = 9;
+const MINESWEEPER_COLS = 9;
+const MINESWEEPER_MINES = 10;
 
 const soundManifest = {
   startup: { src: "assets/sounds/startup.wav", volume: 0.16 },
@@ -38,6 +45,7 @@ const i18n = {
       projects: "Проекты",
       skills: "Навыки",
       certificates: "Сертификаты",
+      games: "Игры",
       contacts: "Контакты",
       readme: "README.txt",
       shutdown: "Завершение работы...",
@@ -54,6 +62,7 @@ const i18n = {
       certificateItems: "сертификатов",
       notepad: "Блокнот",
       explorer: "Проводник",
+      application: "Приложение",
       open: "Открыть",
       newExplorerWindow: "Новое окно Проводника",
       openFile: "Открыть файл",
@@ -132,6 +141,28 @@ const i18n = {
       contacts: "Контакты",
       readme: "README.txt",
       recycleBin: "Корзина",
+      games: "Игры",
+    },
+    games: {
+      snake: {
+        title: "Змейка",
+        score: "Счёт",
+        best: "Рекорд",
+        start: "Старт",
+        pause: "Пауза",
+        reset: "Сброс",
+        pressStart: "Нажмите Старт или Enter",
+        paused: "Пауза",
+        gameOver: "Игра окончена",
+      },
+      minesweeper: {
+        title: "Сапёр",
+        mines: "Мины",
+        time: "Время",
+        newGame: "Новая игра",
+        win: "Победа",
+        gameOver: "Игра окончена",
+      },
     },
   },
   en: {
@@ -142,6 +173,7 @@ const i18n = {
       projects: "Projects",
       skills: "Skills",
       certificates: "Certificates",
+      games: "Games",
       contacts: "Contacts",
       readme: "README.txt",
       shutdown: "Shut Down...",
@@ -158,6 +190,7 @@ const i18n = {
       certificateItems: "certificates",
       notepad: "Notepad",
       explorer: "Explorer",
+      application: "Application",
       open: "Open",
       newExplorerWindow: "New Explorer Window",
       openFile: "Open file",
@@ -236,6 +269,28 @@ const i18n = {
       contacts: "Contacts",
       readme: "README.txt",
       recycleBin: "Recycle Bin",
+      games: "Games",
+    },
+    games: {
+      snake: {
+        title: "Snake",
+        score: "Score",
+        best: "Best",
+        start: "Start",
+        pause: "Pause",
+        reset: "Reset",
+        pressStart: "Press Start or Enter",
+        paused: "Paused",
+        gameOver: "Game over",
+      },
+      minesweeper: {
+        title: "Minesweeper",
+        mines: "Mines",
+        time: "Time",
+        newGame: "New game",
+        win: "You won",
+        gameOver: "Game over",
+      },
     },
   },
 };
@@ -365,6 +420,29 @@ const fileSystem = {
           en:
             "Infrastructure and VPN projects included work with Linux servers, Docker, domains, Nginx, certificates, proxy services, private networks, and service deployment. These projects gave me practical experience in server administration and network diagnostics.",
         },
+      },
+    },
+  },
+  games: {
+    type: "folder",
+    icon: "games",
+    label: { ru: "Игры", en: "Games" },
+    files: {
+      snake: {
+        type: "app",
+        app: "snake",
+        icon: "snake",
+        filename: { ru: "Змейка.exe", en: "Snake.exe" },
+        size: "18 KB",
+        modified: "1998-06-25",
+      },
+      minesweeper: {
+        type: "app",
+        app: "minesweeper",
+        icon: "minesweeper",
+        filename: { ru: "Сапёр.exe", en: "Minesweeper.exe" },
+        size: "24 KB",
+        modified: "1998-06-25",
       },
     },
   },
@@ -651,6 +729,7 @@ const desktopItems = [
   { type: "folder", id: "about" },
   { type: "folder", id: "education" },
   { type: "folder", id: "projects" },
+  { type: "folder", id: "games" },
   { type: "folder", id: "skills" },
   { type: "folder", id: "achievements" },
   { type: "folder", id: "certificates" },
@@ -673,6 +752,18 @@ const iconMap = {
   projects: {
     small: "assets/icons/16/projects.png",
     large: "assets/icons/32/projects.png",
+  },
+  games: {
+    small: "assets/icons/16/games.png",
+    large: "assets/icons/32/games.png",
+  },
+  snake: {
+    small: "assets/icons/16/snake.png",
+    large: "assets/icons/32/snake.png",
+  },
+  minesweeper: {
+    small: "assets/icons/16/minesweeper.png",
+    large: "assets/icons/32/minesweeper.png",
   },
   skills: {
     small: "assets/icons/16/skills.png",
@@ -912,6 +1003,7 @@ let selectionRectEl = null;
 let suppressNextDesktopClick = false;
 let snapDesktopIcons = true;
 let virtualClipboard = null;
+const gameStates = new Map();
 
 function initDesktop() {
   renderDesktopIcons();
@@ -1026,6 +1118,11 @@ function shouldPlayKeyboardClickSound(event) {
 
 function handleGlobalKeydown(event) {
   if (isEditableTarget(event.target)) return;
+
+  if (handleActiveGameKeydown(event)) {
+    event.preventDefault();
+    return;
+  }
 
   if (event.key === "Escape") {
     if (closeTransientMenus()) {
@@ -1176,6 +1273,7 @@ function renderStartMenu() {
     { separator: true },
     { kind: "folder", id: "root", label: { ru: t("ui.programs"), en: t("ui.programs") }, icon: "computer" },
     { kind: "folder", id: "projects", label: { ru: t("ui.projects"), en: t("ui.projects") }, icon: "projects" },
+    { kind: "folder", id: "games", label: { ru: t("ui.games"), en: t("ui.games") }, icon: "games" },
     { kind: "folder", id: "skills", label: { ru: t("ui.skills"), en: t("ui.skills") }, icon: "skills" },
     { kind: "folder", id: "certificates", label: { ru: t("ui.certificates"), en: t("ui.certificates") }, icon: "certificates" },
     { kind: "folder", id: "contacts", label: { ru: t("ui.contacts"), en: t("ui.contacts") }, icon: "contacts" },
@@ -1316,6 +1414,62 @@ function openTextFile(parentId, fileId, options = {}) {
     meta: { parentId, fileId },
     getTitle: () => getTextFileTitle(file),
     renderBody: () => renderTextBody(parentId, fileId),
+    ...options,
+  });
+}
+
+function openApp(appId, options = {}) {
+  if (appId === "snake") {
+    openSnakeGame(options);
+    return;
+  }
+
+  if (appId === "minesweeper") {
+    openMinesweeperGame(options);
+    return;
+  }
+
+  audioManager.play("error");
+}
+
+function openSnakeGame(options = {}) {
+  const windowId = "app:snake";
+  if (focusExistingWindow(windowId)) return;
+
+  gameStates.set(windowId, createSnakeState(windowId));
+  createWindow({
+    id: windowId,
+    kind: "game",
+    iconType: "snake",
+    width: 390,
+    height: 470,
+    minWidth: 320,
+    minHeight: 410,
+    hasMenu: false,
+    meta: { appId: "snake" },
+    getTitle: () => t("games.snake.title"),
+    renderBody: () => renderSnakeBody(windowId),
+    ...options,
+  });
+}
+
+function openMinesweeperGame(options = {}) {
+  const windowId = "app:minesweeper";
+  if (focusExistingWindow(windowId)) return;
+
+  gameStates.set(windowId, createMinesweeperState(windowId));
+  createWindow({
+    id: windowId,
+    kind: "game",
+    iconType: "minesweeper",
+    width: 292,
+    height: 360,
+    minWidth: 260,
+    minHeight: 330,
+    hasMenu: false,
+    meta: { appId: "minesweeper" },
+    getTitle: () => t("games.minesweeper.title"),
+    renderBody: () => renderMinesweeperBody(windowId),
     ...options,
   });
 }
@@ -1581,7 +1735,12 @@ function createFileButton({ item, record, folderId, viewMode }) {
     ${viewMode === "small" || viewMode === "list" ? getMiniIconMarkup(item.icon) : getLargeIconMarkup(item.icon)}
     <span class="file-icon__label">${escapeHtml(label)}</span>
   `;
-  button.addEventListener("click", (event) => selectExplorerItem(record.id, item.key, event.ctrlKey || event.metaKey));
+  button.addEventListener("click", (event) => {
+    selectExplorerItem(record.id, item.key, event.ctrlKey || event.metaKey);
+    if (item.kind === "app" && !event.ctrlKey && !event.metaKey) {
+      openExplorerItem(record.id, item);
+    }
+  });
   button.addEventListener("dblclick", () => openExplorerItem(record.id, item));
   button.addEventListener("contextmenu", (event) => showExplorerItemContextMenu(event, record.id, item));
   return button;
@@ -1613,7 +1772,12 @@ function createDetailsTable(record, folderId, items) {
       <td>${escapeHtml(item.size || "1 KB")}</td>
       <td>${escapeHtml(item.modified || "2026-06-11")}</td>
     `;
-    row.addEventListener("click", (event) => selectExplorerItem(record.id, item.key, event.ctrlKey || event.metaKey));
+    row.addEventListener("click", (event) => {
+      selectExplorerItem(record.id, item.key, event.ctrlKey || event.metaKey);
+      if (item.kind === "app" && !event.ctrlKey && !event.metaKey) {
+        openExplorerItem(record.id, item);
+      }
+    });
     row.addEventListener("dblclick", () => openExplorerItem(record.id, item));
     row.addEventListener("contextmenu", (event) => showExplorerItemContextMenu(event, record.id, item));
     tbody.appendChild(row);
@@ -1875,6 +2039,7 @@ function minimizeWindow(id, options = {}) {
   const record = openWindows.get(id);
   if (!record) return;
 
+  pauseGameOnMinimize(record);
   record.minimized = true;
   record.element.classList.add("is-minimized");
   record.element.classList.remove("is-active");
@@ -1930,6 +2095,7 @@ function closeWindow(id, options = {}) {
   const record = openWindows.get(id);
   if (!record) return;
 
+  cleanupGameWindow(id);
   record.element.remove();
   if (record.taskbarButton) record.taskbarButton.remove();
   openWindows.delete(id);
@@ -2362,10 +2528,10 @@ function getFolderItems(folderId) {
   const items = Object.entries(folder.files || {}).map(([fileId, file]) => ({
     key: `file:${folderId}:${fileId}`,
     id: fileId,
-    kind: file.type === "image" ? "image" : "text",
+    kind: file.type === "image" ? "image" : file.type === "app" ? "app" : "text",
     parentId: folderId,
     item: file,
-    icon: file.type === "image" ? "image" : getFileIconType(folderId, fileId),
+    icon: file.icon || (file.type === "image" ? "image" : getFileIconType(folderId, fileId)),
     size: file.size || "1 KB",
     modified: file.modified || "2026-06-11",
   }));
@@ -2431,6 +2597,7 @@ function getExplorerItemType(item) {
   if (item.kind === "folder") return t("ui.explorer");
   if (item.kind === "systemFolder") return t("desktop.recycleBin");
   if (item.kind === "rootText" || item.kind === "text") return t("ui.notepad");
+  if (item.kind === "app") return t("ui.application");
   if (item.kind === "image") return t("ui.imageViewer");
   if (item.kind === "certificate") return t("ui.certificatePreview");
   if (item.kind === "recycle") return getLocalized(item.typeLabel);
@@ -2524,6 +2691,8 @@ function openExplorerItem(windowId, item) {
     openTextFile("root", item.id);
   } else if (item.kind === "text") {
     openTextFile(item.parentId, item.id);
+  } else if (item.kind === "app") {
+    openApp(item.item.app);
   } else if (item.kind === "image") {
     openImageFile(item.parentId, item.id, item.item);
   } else if (item.kind === "certificate") {
@@ -2567,6 +2736,600 @@ function renderImageBody(file) {
     </div>
   `;
   return body;
+}
+
+function renderSnakeBody(windowId) {
+  const state = gameStates.get(windowId);
+  const body = document.createElement("div");
+  body.className = "window-panel game-panel snake-panel";
+
+  body.innerHTML = `
+    <div class="game-toolbar">
+      <div class="game-stat"><span>${escapeHtml(t("games.snake.score"))}</span><strong class="snake-score">0</strong></div>
+      <div class="game-stat"><span>${escapeHtml(t("games.snake.best"))}</span><strong class="snake-best">0</strong></div>
+      <button type="button" class="win-button snake-start">${escapeHtml(t("games.snake.start"))}</button>
+      <button type="button" class="win-button snake-pause">${escapeHtml(t("games.snake.pause"))}</button>
+      <button type="button" class="win-button snake-reset">${escapeHtml(t("games.snake.reset"))}</button>
+    </div>
+    <div class="snake-stage">
+      <canvas class="snake-canvas" width="${SNAKE_GRID_SIZE * SNAKE_CELL_SIZE}" height="${SNAKE_GRID_SIZE * SNAKE_CELL_SIZE}" aria-label="${escapeHtml(t("games.snake.title"))}"></canvas>
+      <div class="snake-message"></div>
+    </div>
+    <div class="snake-controls" aria-label="${escapeHtml(t("games.snake.title"))}">
+      <span></span>
+      <button type="button" class="snake-control-button" data-direction="up">↑</button>
+      <span></span>
+      <button type="button" class="snake-control-button" data-direction="left">←</button>
+      <button type="button" class="snake-control-button" data-direction="down">↓</button>
+      <button type="button" class="snake-control-button" data-direction="right">→</button>
+    </div>
+  `;
+
+  if (!state) return body;
+
+  state.elements = {
+    score: body.querySelector(".snake-score"),
+    best: body.querySelector(".snake-best"),
+    canvas: body.querySelector(".snake-canvas"),
+    message: body.querySelector(".snake-message"),
+    pauseButton: body.querySelector(".snake-pause"),
+  };
+
+  body.querySelector(".snake-start").addEventListener("click", () => startSnakeGame(state));
+  body.querySelector(".snake-pause").addEventListener("click", () => toggleSnakePause(state));
+  body.querySelector(".snake-reset").addEventListener("click", () => resetSnakeGame(state));
+  body.querySelectorAll(".snake-control-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      setSnakeDirection(state, button.dataset.direction);
+      if (state.status === "idle") startSnakeGame(state);
+    });
+  });
+
+  updateSnakeHud(state);
+  drawSnakeGame(state);
+  return body;
+}
+
+function createSnakeState(windowId) {
+  const state = {
+    type: "snake",
+    windowId,
+    gridSize: SNAKE_GRID_SIZE,
+    cellSize: SNAKE_CELL_SIZE,
+    snake: [],
+    direction: { x: 1, y: 0 },
+    nextDirection: { x: 1, y: 0 },
+    food: { x: 0, y: 0 },
+    score: 0,
+    best: getStoredSnakeBestScore(),
+    status: "idle",
+    intervalId: null,
+    elements: {},
+  };
+  resetSnakeGame(state, { render: false });
+  return state;
+}
+
+function resetSnakeGame(state, options = {}) {
+  clearSnakeInterval(state);
+  const center = Math.floor(state.gridSize / 2);
+  state.snake = [
+    { x: center, y: center },
+    { x: center - 1, y: center },
+    { x: center - 2, y: center },
+  ];
+  state.direction = { x: 1, y: 0 };
+  state.nextDirection = { x: 1, y: 0 };
+  state.score = 0;
+  state.status = "idle";
+  state.food = spawnSnakeFood(state);
+  if (options.render !== false) updateGameWindow(state.windowId);
+}
+
+function startSnakeGame(state) {
+  if (state.status === "game-over") {
+    resetSnakeGame(state, { render: false });
+  }
+  state.status = "running";
+  ensureSnakeInterval(state);
+  updateGameWindow(state.windowId);
+}
+
+function toggleSnakePause(state) {
+  if (state.status === "running") {
+    pauseSnakeGame(state);
+  } else if (state.status === "paused") {
+    startSnakeGame(state);
+  }
+}
+
+function pauseSnakeGame(state, options = {}) {
+  if (state.status !== "running") return;
+  state.status = "paused";
+  clearSnakeInterval(state);
+  if (options.render !== false) updateGameWindow(state.windowId);
+}
+
+function ensureSnakeInterval(state) {
+  if (state.intervalId) return;
+  state.intervalId = window.setInterval(() => tickSnakeGame(state), SNAKE_TICK_MS);
+}
+
+function clearSnakeInterval(state) {
+  if (!state.intervalId) return;
+  window.clearInterval(state.intervalId);
+  state.intervalId = null;
+}
+
+function tickSnakeGame(state) {
+  if (state.status !== "running") return;
+
+  state.direction = { ...state.nextDirection };
+  const head = state.snake[0];
+  const nextHead = {
+    x: head.x + state.direction.x,
+    y: head.y + state.direction.y,
+  };
+  const hitWall =
+    nextHead.x < 0 ||
+    nextHead.y < 0 ||
+    nextHead.x >= state.gridSize ||
+    nextHead.y >= state.gridSize;
+  const hitSelf = state.snake.some((segment) => segment.x === nextHead.x && segment.y === nextHead.y);
+
+  if (hitWall || hitSelf) {
+    state.status = "game-over";
+    clearSnakeInterval(state);
+    updateGameWindow(state.windowId);
+    return;
+  }
+
+  state.snake.unshift(nextHead);
+
+  if (nextHead.x === state.food.x && nextHead.y === state.food.y) {
+    state.score += 10;
+    if (state.score > state.best) {
+      state.best = state.score;
+      saveSnakeBestScore(state.best);
+    }
+    state.food = spawnSnakeFood(state);
+  } else {
+    state.snake.pop();
+  }
+
+  updateSnakeHud(state);
+  drawSnakeGame(state);
+}
+
+function setSnakeDirection(state, directionName) {
+  const directions = {
+    up: { x: 0, y: -1 },
+    down: { x: 0, y: 1 },
+    left: { x: -1, y: 0 },
+    right: { x: 1, y: 0 },
+  };
+  const next = directions[directionName];
+  if (!next) return;
+  if (state.snake.length > 1 && next.x + state.direction.x === 0 && next.y + state.direction.y === 0) {
+    return;
+  }
+  state.nextDirection = next;
+}
+
+function spawnSnakeFood(state) {
+  const occupied = new Set(state.snake.map((segment) => `${segment.x}:${segment.y}`));
+  const emptyCells = [];
+
+  for (let y = 0; y < state.gridSize; y += 1) {
+    for (let x = 0; x < state.gridSize; x += 1) {
+      if (!occupied.has(`${x}:${y}`)) emptyCells.push({ x, y });
+    }
+  }
+
+  return emptyCells[Math.floor(Math.random() * emptyCells.length)] || { x: 0, y: 0 };
+}
+
+function updateSnakeHud(state) {
+  if (!state.elements?.score) return;
+  state.elements.score.textContent = String(state.score);
+  state.elements.best.textContent = String(state.best);
+  state.elements.message.textContent = getSnakeMessage(state);
+  state.elements.message.hidden = state.status === "running";
+  state.elements.pauseButton.disabled = state.status === "idle" || state.status === "game-over";
+}
+
+function drawSnakeGame(state) {
+  const canvas = state.elements?.canvas;
+  if (!canvas) return;
+  const context = canvas.getContext("2d");
+  const size = state.cellSize;
+  context.imageSmoothingEnabled = false;
+  context.fillStyle = "#001c10";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.strokeStyle = "#184830";
+
+  for (let line = 0; line <= state.gridSize; line += 1) {
+    context.beginPath();
+    context.moveTo(line * size + 0.5, 0);
+    context.lineTo(line * size + 0.5, canvas.height);
+    context.moveTo(0, line * size + 0.5);
+    context.lineTo(canvas.width, line * size + 0.5);
+    context.stroke();
+  }
+
+  context.fillStyle = "#ff3030";
+  context.fillRect(state.food.x * size + 2, state.food.y * size + 2, size - 4, size - 4);
+
+  state.snake.forEach((segment, index) => {
+    context.fillStyle = index === 0 ? "#c8ff50" : "#20c050";
+    context.fillRect(segment.x * size + 1, segment.y * size + 1, size - 2, size - 2);
+    context.strokeStyle = "#003000";
+    context.strokeRect(segment.x * size + 1.5, segment.y * size + 1.5, size - 3, size - 3);
+  });
+}
+
+function getSnakeMessage(state) {
+  if (state.status === "paused") return t("games.snake.paused");
+  if (state.status === "game-over") return t("games.snake.gameOver");
+  if (state.status === "idle") return t("games.snake.pressStart");
+  return "";
+}
+
+function getStoredSnakeBestScore() {
+  try {
+    return Number(localStorage.getItem(SNAKE_BEST_STORAGE_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveSnakeBestScore(score) {
+  try {
+    localStorage.setItem(SNAKE_BEST_STORAGE_KEY, String(score));
+  } catch {
+    // Best score is optional; the game still works without storage access.
+  }
+}
+
+function renderMinesweeperBody(windowId) {
+  const state = gameStates.get(windowId);
+  const body = document.createElement("div");
+  body.className = "window-panel game-panel minesweeper-panel";
+  body.innerHTML = `
+    <div class="minesweeper-header">
+      <div class="minesweeper-counter"><span>${escapeHtml(t("games.minesweeper.mines"))}</span><strong class="minesweeper-mines">010</strong></div>
+      <button type="button" class="minesweeper-face" aria-label="${escapeHtml(t("games.minesweeper.newGame"))}">:)</button>
+      <div class="minesweeper-counter"><span>${escapeHtml(t("games.minesweeper.time"))}</span><strong class="minesweeper-time">000</strong></div>
+    </div>
+    <div class="minesweeper-message"></div>
+    <div class="minesweeper-grid" role="grid" aria-label="${escapeHtml(t("games.minesweeper.title"))}"></div>
+  `;
+
+  if (!state) return body;
+
+  state.elements = {
+    mineCounter: body.querySelector(".minesweeper-mines"),
+    timer: body.querySelector(".minesweeper-time"),
+    face: body.querySelector(".minesweeper-face"),
+    message: body.querySelector(".minesweeper-message"),
+    grid: body.querySelector(".minesweeper-grid"),
+  };
+  state.elements.face.addEventListener("click", () => resetMinesweeper(state));
+  renderMinesweeperGrid(state);
+  updateMinesweeperHeader(state);
+  return body;
+}
+
+function createMinesweeperState(windowId) {
+  const state = {
+    type: "minesweeper",
+    windowId,
+    rows: MINESWEEPER_ROWS,
+    cols: MINESWEEPER_COLS,
+    mineCount: MINESWEEPER_MINES,
+    cells: [],
+    generated: false,
+    status: "ready",
+    flags: 0,
+    opened: 0,
+    seconds: 0,
+    timerId: null,
+    elements: {},
+  };
+  resetMinesweeper(state, { render: false });
+  return state;
+}
+
+function resetMinesweeper(state, options = {}) {
+  stopMinesweeperTimer(state);
+  state.cells = Array.from({ length: state.rows * state.cols }, () => ({
+    mine: false,
+    open: false,
+    flagged: false,
+    adjacent: 0,
+  }));
+  state.generated = false;
+  state.status = "ready";
+  state.flags = 0;
+  state.opened = 0;
+  state.seconds = 0;
+  if (options.render !== false) updateGameWindow(state.windowId);
+}
+
+function generateMinesweeperBoard(state, firstRow, firstCol) {
+  const safeIndex = firstRow * state.cols + firstCol;
+  const minePositions = new Set();
+
+  while (minePositions.size < state.mineCount) {
+    const index = Math.floor(Math.random() * state.cells.length);
+    if (index !== safeIndex) minePositions.add(index);
+  }
+
+  minePositions.forEach((index) => {
+    state.cells[index].mine = true;
+  });
+
+  state.cells.forEach((cell, index) => {
+    if (cell.mine) return;
+    const row = Math.floor(index / state.cols);
+    const col = index % state.cols;
+    cell.adjacent = getMinesweeperNeighbors(state, row, col).filter((neighbor) => neighbor.mine).length;
+  });
+
+  state.generated = true;
+}
+
+function getMinesweeperNeighbors(state, row, col) {
+  const neighbors = [];
+  for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
+    for (let colOffset = -1; colOffset <= 1; colOffset += 1) {
+      if (!rowOffset && !colOffset) continue;
+      const nextRow = row + rowOffset;
+      const nextCol = col + colOffset;
+      if (nextRow < 0 || nextCol < 0 || nextRow >= state.rows || nextCol >= state.cols) continue;
+      neighbors.push(state.cells[nextRow * state.cols + nextCol]);
+    }
+  }
+  return neighbors;
+}
+
+function openMinesweeperCell(state, row, col) {
+  if (state.status === "lost" || state.status === "won") return;
+  const cell = state.cells[row * state.cols + col];
+  if (!cell || cell.open || cell.flagged) return;
+
+  if (!state.generated) {
+    generateMinesweeperBoard(state, row, col);
+    state.status = "playing";
+    startMinesweeperTimer(state);
+  }
+
+  if (cell.mine) {
+    cell.open = true;
+    finishMinesweeper(state, "lost");
+    return;
+  }
+
+  revealMinesweeperFrom(state, row, col);
+  checkMinesweeperWin(state);
+  renderMinesweeperGrid(state);
+  updateMinesweeperHeader(state);
+}
+
+function revealMinesweeperFrom(state, row, col) {
+  const stack = [{ row, col }];
+  const visited = new Set();
+
+  while (stack.length) {
+    const current = stack.pop();
+    const key = `${current.row}:${current.col}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
+
+    const cell = state.cells[current.row * state.cols + current.col];
+    if (!cell || cell.open || cell.flagged || cell.mine) continue;
+
+    cell.open = true;
+    state.opened += 1;
+
+    if (cell.adjacent === 0) {
+      for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
+        for (let colOffset = -1; colOffset <= 1; colOffset += 1) {
+          if (!rowOffset && !colOffset) continue;
+          const nextRow = current.row + rowOffset;
+          const nextCol = current.col + colOffset;
+          if (nextRow < 0 || nextCol < 0 || nextRow >= state.rows || nextCol >= state.cols) continue;
+          stack.push({ row: nextRow, col: nextCol });
+        }
+      }
+    }
+  }
+}
+
+function toggleMinesweeperFlag(state, row, col) {
+  if (state.status === "lost" || state.status === "won") return;
+  const cell = state.cells[row * state.cols + col];
+  if (!cell || cell.open) return;
+  cell.flagged = !cell.flagged;
+  state.flags += cell.flagged ? 1 : -1;
+  renderMinesweeperGrid(state);
+  updateMinesweeperHeader(state);
+}
+
+function checkMinesweeperWin(state) {
+  if (state.opened >= state.cells.length - state.mineCount) {
+    finishMinesweeper(state, "won");
+  }
+}
+
+function finishMinesweeper(state, status) {
+  state.status = status;
+  stopMinesweeperTimer(state);
+  if (status === "won") {
+    state.flags = state.mineCount;
+    state.cells.forEach((cell) => {
+      if (cell.mine) cell.flagged = true;
+    });
+  }
+  renderMinesweeperGrid(state);
+  updateMinesweeperHeader(state);
+}
+
+function startMinesweeperTimer(state) {
+  if (state.timerId) return;
+  state.timerId = window.setInterval(() => {
+    state.seconds += 1;
+    updateMinesweeperHeader(state);
+  }, 1000);
+}
+
+function stopMinesweeperTimer(state) {
+  if (!state.timerId) return;
+  window.clearInterval(state.timerId);
+  state.timerId = null;
+}
+
+function updateMinesweeperHeader(state) {
+  if (!state.elements?.mineCounter) return;
+  const remaining = state.mineCount - state.flags;
+  state.elements.mineCounter.textContent = formatMinesweeperNumber(remaining);
+  state.elements.timer.textContent = formatMinesweeperNumber(state.seconds);
+  state.elements.face.textContent = getMinesweeperFace(state);
+  state.elements.message.textContent = getMinesweeperMessage(state);
+  state.elements.message.hidden = state.status === "ready" || state.status === "playing";
+}
+
+function renderMinesweeperGrid(state) {
+  const grid = state.elements?.grid;
+  if (!grid) return;
+  grid.innerHTML = "";
+  grid.style.setProperty("--cols", state.cols);
+
+  state.cells.forEach((cell, index) => {
+    const row = Math.floor(index / state.cols);
+    const col = index % state.cols;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "minesweeper-cell";
+    button.dataset.row = String(row);
+    button.dataset.col = String(col);
+    button.setAttribute("role", "gridcell");
+    button.setAttribute("aria-label", `${row + 1}, ${col + 1}`);
+    button.classList.toggle("is-open", cell.open || (state.status === "lost" && cell.mine));
+    button.classList.toggle("is-flagged", cell.flagged);
+    button.classList.toggle("is-mine", state.status === "lost" && cell.mine);
+    if (cell.open && cell.adjacent) button.classList.add(`value-${cell.adjacent}`);
+
+    if (cell.flagged && !cell.open) {
+      button.textContent = "⚑";
+    } else if (state.status === "lost" && cell.mine) {
+      button.textContent = "*";
+    } else if (cell.open && cell.adjacent) {
+      button.textContent = String(cell.adjacent);
+    }
+
+    let longPressTimer = null;
+    let longPressed = false;
+    button.addEventListener("pointerdown", (event) => {
+      if (event.button && event.button !== 0) return;
+      longPressed = false;
+      longPressTimer = window.setTimeout(() => {
+        longPressed = true;
+        toggleMinesweeperFlag(state, row, col);
+      }, 520);
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach((eventName) => {
+      button.addEventListener(eventName, () => {
+        if (longPressTimer) window.clearTimeout(longPressTimer);
+        longPressTimer = null;
+      });
+    });
+    button.addEventListener("click", (event) => {
+      if (longPressed) {
+        event.preventDefault();
+        return;
+      }
+      openMinesweeperCell(state, row, col);
+    });
+    button.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      toggleMinesweeperFlag(state, row, col);
+    });
+    grid.appendChild(button);
+  });
+}
+
+function formatMinesweeperNumber(value) {
+  const sign = value < 0 ? "-" : "";
+  return `${sign}${String(Math.abs(value)).padStart(3, "0").slice(-3)}`;
+}
+
+function getMinesweeperFace(state) {
+  if (state.status === "won") return "B)";
+  if (state.status === "lost") return "X(";
+  return ":)";
+}
+
+function getMinesweeperMessage(state) {
+  if (state.status === "won") return t("games.minesweeper.win");
+  if (state.status === "lost") return t("games.minesweeper.gameOver");
+  return t("games.minesweeper.newGame");
+}
+
+function handleActiveGameKeydown(event) {
+  const record = activeWindowId ? openWindows.get(activeWindowId) : null;
+  if (!record || record.kind !== "game" || record.minimized) return false;
+  const state = gameStates.get(record.id);
+  if (!state || state.type !== "snake") return false;
+
+  const key = event.key.toLowerCase();
+  const keyDirections = {
+    arrowup: "up",
+    w: "up",
+    arrowdown: "down",
+    s: "down",
+    arrowleft: "left",
+    a: "left",
+    arrowright: "right",
+    d: "right",
+  };
+
+  if (keyDirections[key]) {
+    setSnakeDirection(state, keyDirections[key]);
+    if (state.status === "idle") startSnakeGame(state);
+    return true;
+  }
+
+  if (event.key === " ") {
+    toggleSnakePause(state);
+    return true;
+  }
+
+  if (event.key === "Enter") {
+    startSnakeGame(state);
+    return true;
+  }
+
+  return false;
+}
+
+function pauseGameOnMinimize(record) {
+  if (record?.kind !== "game" || record.meta?.appId !== "snake") return;
+  const state = gameStates.get(record.id);
+  if (state?.type === "snake") pauseSnakeGame(state);
+}
+
+function cleanupGameWindow(windowId) {
+  const state = gameStates.get(windowId);
+  if (!state) return;
+  if (state.type === "snake") clearSnakeInterval(state);
+  if (state.type === "minesweeper") stopMinesweeperTimer(state);
+  gameStates.delete(windowId);
+}
+
+function updateGameWindow(windowId) {
+  const record = openWindows.get(windowId);
+  if (record) updateWindowRecord(record);
 }
 
 function deleteCurrentSelection() {
@@ -2683,7 +3446,7 @@ function moveExplorerItemToRecycle(item) {
     return;
   }
 
-  if (item.kind === "text" || item.kind === "image") {
+  if (item.kind === "text" || item.kind === "image" || item.kind === "app") {
     const file = fileSystem[item.parentId]?.files?.[item.id];
     if (!file) return;
     delete fileSystem[item.parentId].files[item.id];
@@ -2862,7 +3625,7 @@ function applyRename(item, newName) {
     } else if (desktopItem?.id === "readme") {
       rootFiles.readme.filename = { ru: newName, en: newName };
     }
-  } else if (item.kind === "text" || item.kind === "image") {
+  } else if (item.kind === "text" || item.kind === "image" || item.kind === "app") {
     item.item.filename = { ru: newName, en: newName };
   } else if (item.kind === "certificate") {
     item.item.title = { ru: newName, en: newName };
@@ -2958,7 +3721,7 @@ function copyExplorerSelection(record, cut = false) {
     showWarningDialog(t("ui.commandUnavailable"));
     return;
   }
-  virtualClipboard = { cut, items: items.filter((item) => item.kind === "text" || item.kind === "image") };
+  virtualClipboard = { cut, items: items.filter((item) => item.kind === "text" || item.kind === "image" || item.kind === "app") };
   if (!virtualClipboard.items.length) showWarningDialog(t("ui.commandUnavailable"));
 }
 
@@ -3290,7 +4053,7 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-window.addEventListener("resize", () => {
+function fitOpenWindowsToViewport() {
   const layerRect = windowLayer.getBoundingClientRect();
 
   openWindows.forEach((record) => {
@@ -3318,6 +4081,10 @@ window.addEventListener("resize", () => {
       top: `${position.top}px`,
     });
   });
-});
+}
+
+window.addEventListener("resize", fitOpenWindowsToViewport);
+window.visualViewport?.addEventListener("resize", fitOpenWindowsToViewport);
+window.addEventListener("orientationchange", () => window.setTimeout(fitOpenWindowsToViewport, 0));
 
 initDesktop();
